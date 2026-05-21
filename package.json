@@ -1,0 +1,12 @@
+{
+  "name": "opencode-better-sidebar",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "plugins/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "pack:dry": "npm run pack:dry --workspaces --if-present"
+  }
+}
