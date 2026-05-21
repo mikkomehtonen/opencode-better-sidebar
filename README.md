@@ -7,3 +7,11 @@ Collection of OpenCode sidebar plugins.
 - `@streetturtle/opencode-open-in` - quick buttons to open the current session folder in your IDE.
 - `@streetturtle/opencode-context-progress` - context usage progress bar with tokens, limit, and spend.
 - `@streetturtle/opencode-recap` - session recap summary in the sidebar.
+
+## Publishing
+
+This repo publishes each plugin as its own npm package via GitHub Actions.
+
+Required GitHub secret:
+
+- `NPM_TOKEN` (npm automation token with publish access to `@streetturtle/*`)

@@ -1,0 +1,87 @@
+name: Publish npm packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugins/**"
+      - "package-lock.json"
+      - ".github/workflows/publish-npm.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Publish workspace packages if version is new
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs")
+          const path = require("node:path")
+          const { spawnSync } = require("node:child_process")
+
+          const pluginsDir = path.join(process.cwd(), "plugins")
+          const pluginNames = fs.readdirSync(pluginsDir, { withFileTypes: true })
+            .filter((entry) => entry.isDirectory())
+            .map((entry) => entry.name)
+
+          let published = 0
+
+          for (const pluginName of pluginNames) {
+            const pluginPath = path.join(pluginsDir, pluginName)
+            const packagePath = path.join(pluginPath, "package.json")
+            if (!fs.existsSync(packagePath)) continue
+
+            const pkg = JSON.parse(fs.readFileSync(packagePath, "utf8"))
+            if (pkg.private) continue
+
+            const name = pkg.name
+            const version = pkg.version
+            if (!name || !version) continue
+
+            const view = spawnSync("npm", ["view", `${name}@${version}`, "version"], {
+              encoding: "utf8",
+              stdio: ["ignore", "pipe", "pipe"],
+            })
+
+            if (view.status === 0) {
+              console.log(`Skipping ${name}@${version} (already published)`)
+              continue
+            }
+
+            console.log(`Publishing ${name}@${version}...`)
+            const publish = spawnSync("npm", ["publish", "--access", "public"], {
+              cwd: pluginPath,
+              stdio: "inherit",
+              env: process.env,
+            })
+
+            if (publish.status !== 0) {
+              process.exit(publish.status || 1)
+            }
+
+            published += 1
+          }
+
+          console.log(`Published ${published} package(s).`)
+          NODE
