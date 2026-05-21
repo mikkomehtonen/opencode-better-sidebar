@@ -166,10 +166,11 @@ function View(props: {
   sessionID: string
 }) {
   const installedIDEs = () => IDES.filter((ide) => getAvailabilitySignal(ide.appName)[0]() === "available")
+  const theme = () => props.api.theme.current
 
   return (
     <box>
-      <text attributes={TextAttributes.BOLD}>Open In</text>
+      <text fg={theme().text} attributes={TextAttributes.BOLD}>Open In</text>
       <box flexDirection="row" gap={1}>
         <For each={installedIDEs()}>{(ide) => (
           <IDEButton api={props.api} sessionID={props.sessionID} ide={ide} />
