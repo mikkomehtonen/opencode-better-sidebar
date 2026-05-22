@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,7 +30,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts --audit=false --fund=false
 
       - name: Publish workspace packages if version is new
         env:
@@ -59,6 +60,11 @@ jobs:
             const version = pkg.version
             if (!name || !version) continue
 
+            if (!name.startsWith("@streetturtle/opencode-")) {
+              console.error(`Refusing to publish unexpected package name: ${name}`)
+              process.exit(1)
+            }
+
             const view = spawnSync("npm", ["view", `${name}@${version}`, "version"], {
               encoding: "utf8",
               stdio: ["ignore", "pipe", "pipe"],
@@ -70,7 +76,7 @@ jobs:
             }
 
             console.log(`Publishing ${name}@${version}...`)
-            const publish = spawnSync("npm", ["publish", "--access", "public"], {
+            const publish = spawnSync("npm", ["publish", "--access", "public", "--provenance"], {
               cwd: pluginPath,
               stdio: "inherit",
               env: process.env,
