@@ -187,6 +187,7 @@ const tui: TuiPlugin = async (api, options) => {
       if (!recapSessionID) throw new Error("Failed to create recap session")
 
       const prompt = `You are a summarization assistant. Output only Markdown - no tools, no files, no questions.
+Do not use Markdown tables.
 
 Summarize this coding session in ~40 words across these sections:
 
@@ -195,6 +196,7 @@ Summarize this coding session in ~40 words across these sections:
 **Next:** max 1 bullet - the immediate next step (skip if none)
 
 No intro, no outro, no extra sections. Output only the Markdown.
+Never use table syntax (no pipes or table separators).
 ${previousRecap ? `\nPREVIOUS RECAP (context for earlier history):\n${previousRecap}\n` : ""}
 RECENT TRANSCRIPT (last ${RECENT_MESSAGES} messages):
 ${transcript}`

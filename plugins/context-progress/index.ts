@@ -3,7 +3,7 @@ import { createMemo } from "solid-js"
 import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { TextAttributes } from "@opentui/core"
 
-const BAR_WIDTH = 20
+const BAR_WIDTH = 24
 
 function formatInt(value: number): string {
   return new Intl.NumberFormat("en-US").format(Math.max(0, Math.round(value)))
@@ -26,12 +26,11 @@ function messageTokenCount(message: any): number {
   return input + output + reasoning + cacheRead + cacheWrite
 }
 
-function buildBar(percent: number): { filled: string; empty: string; clamped: number } {
+function buildBar(percent: number): { bar: string; clamped: number } {
   const clamped = Math.max(0, Math.min(100, percent))
   const filled = Math.max(0, Math.min(BAR_WIDTH, Math.round((clamped / 100) * BAR_WIDTH)))
   return {
-    filled: "█".repeat(filled),
-    empty: "░".repeat(BAR_WIDTH - filled),
+    bar: `${"█".repeat(filled)}${"░".repeat(BAR_WIDTH - filled)}`,
     clamped,
   }
 }
@@ -90,9 +89,9 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
     const bar = buildBar(percent)
     const color = percent >= 90 ? theme().error : percent >= 70 ? theme().warning : theme().accent
     return {
-      ...bar,
+      bar: bar.bar,
       color,
-      percent,
+      percent: bar.clamped,
     }
   })
 
@@ -100,9 +99,8 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
     <box>
       <text fg={theme().text} attributes={TextAttributes.BOLD}>Context</text>
       <box flexDirection="row" gap={1}>
-        <text fg={progress().color}>{progress().filled}</text>
-        <text fg={theme().textMuted}>{progress().empty}</text>
-        <text fg={progress().color}>{progress().percent}%</text>
+        <text fg={progress().color}>{progress().bar}</text>
+        <text fg={progress().color}> {progress().percent}%</text>
       </box>
       <text fg={theme().textMuted}>{detailLine()}</text>
     </box>
