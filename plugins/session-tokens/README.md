@@ -1,11 +1,20 @@
 # @streetturtle/opencode-session-tokens
 
-OpenCode sidebar plugin for session token usage in the current session.
+OpenCode sidebar plugin for quick session token visibility.
+
+<img src="https://raw.githubusercontent.com/streetturtle/opencode-better-sidebar/main/assets/session-tokens-screenshot.png" alt="Session Tokens sidebar screenshot" width="520" />
+
+## What it shows
 
 - Collapsed: `▶ Session Tokens <total>`
-- Expanded: `▼ Session Tokens <total>` with per-model breakdown
-- Total uses session token counters when available
-- Breakdown aggregates assistant response spend (`input + output + reasoning + cache.write`)
+- Expanded: `▼ Session Tokens <total>` with per-model totals
+- Falls back to session-level token counters when per-message breakdown is unavailable
+
+## Counting logic
+
+- Per-message spend uses: `input + output + reasoning + cache.write`
+- Counts assistant messages with token data
+- De-duplicates repeated assistant messages by message ID
 
 ## Install
 

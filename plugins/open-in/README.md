@@ -1,10 +1,12 @@
 # @streetturtle/opencode-open-in
 
-OpenCode sidebar plugin with quick IDE buttons.
+OpenCode sidebar plugin with one-click IDE launch buttons for the current session.
 
-- Shows **Open In** in the sidebar
-- Buttons: Zed, VS Code, Cursor
-- Opens the current session folder in the selected IDE
+## What it does
+
+- Adds an **Open In** section to the sidebar
+- Shows buttons for installed IDEs only (Zed, VS Code, Cursor)
+- Opens the active session directory directly in your IDE
 
 ## Install
 
@@ -18,6 +20,11 @@ Global install:
 opencode plugin --global @streetturtle/opencode-open-in
 ```
 
+## Usage
+
+Open any session and click the IDE button in the sidebar.
+
 ## Notes
 
-- Currently supports macOS only (`open -a`)
+- macOS only (`open -a`)
+- If a button is missing, the IDE was not detected as installed

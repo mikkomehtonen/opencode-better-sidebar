@@ -1,12 +1,12 @@
-# opencode-recap
+# @streetturtle/opencode-recap
 
-Sidebar recap plugin for [OpenCode](https://opencode.ai).
+One-click Markdown session recap in the OpenCode sidebar.
 
-- Click **Recap** to generate a short Markdown summary
-- Renders in the sidebar (not the chat thread)
-- Auto-clears after 3 new prompts
+- Click **Recap** to generate a short summary
+- Stays in the sidebar (does not pollute the chat thread)
+- Auto-clears after 3 new prompts to keep it fresh
 
-<img src="./recap.png" alt="Recap sidebar screenshot" width="520" />
+<img src="https://raw.githubusercontent.com/streetturtle/opencode-better-sidebar/main/assets/recap-screenshot.png" alt="Recap sidebar screenshot" width="520" />
 
 ## Install
 
@@ -20,19 +20,22 @@ Global install:
 opencode plugin --global @streetturtle/opencode-recap
 ```
 
-Restart OpenCode after install.
-
 ## Usage
 
 Open a session and click **Recap** in the sidebar.
 
-- Uses recent context (last 10 messages)
-- Reuses previous recap for continuity
-- Default model: the session's recent assistant model
+What the plugin does internally:
 
-## Optional model override
+- Uses the most recent 10 messages as recap context
+- Reuses previous recap output for continuity
+- Creates a short-lived throwaway session for generation
+- Deletes the throwaway session after completion
 
-Set both `providerID` and `modelID` in `tui.json`:
+## Model selection
+
+By default, recap uses the session's most recent assistant model.
+
+You can override it by setting both `providerID` and `modelID` in `tui.json`:
 
 ```json
 {
@@ -49,9 +52,4 @@ Set both `providerID` and `modelID` in `tui.json`:
 
 - `ProviderModelNotFoundError`: verify values with `opencode models`
 - `Invalid recap plugin config`: set both fields or neither
-- `duplicate tui plugin id`: configure recap in only one `tui.json`
-
-## Requirements
-
-- OpenCode 1.4.3+
-- Any configured AI provider
+- `duplicate tui plugin id`: configure recap only once
