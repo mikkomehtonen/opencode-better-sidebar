@@ -35,6 +35,7 @@ jobs:
       - name: Publish workspace packages if version is new
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          ENABLE_PROVENANCE: ${{ github.event.repository.private == false }}
         run: |
           node <<'NODE'
           const fs = require("node:fs")
@@ -76,7 +77,12 @@ jobs:
             }
 
             console.log(`Publishing ${name}@${version}...`)
-            const publish = spawnSync("npm", ["publish", "--access", "public", "--provenance"], {
+            const publishArgs = ["publish", "--access", "public"]
+            if (process.env.ENABLE_PROVENANCE === "true") {
+              publishArgs.push("--provenance")
+            }
+
+            const publish = spawnSync("npm", publishArgs, {
               cwd: pluginPath,
               stdio: "inherit",
               env: process.env,
