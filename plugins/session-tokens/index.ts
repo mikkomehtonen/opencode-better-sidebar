@@ -3,6 +3,7 @@ import { createMemo, createSignal, For, Show } from "solid-js"
 import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
 
 const MAX_MODEL_ROWS = 10
+const INT_FORMATTER = new Intl.NumberFormat("en-US")
 
 function safeNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0
@@ -17,7 +18,7 @@ function spentTokenCount(tokens: any): number {
 }
 
 function formatInt(value: number): string {
-  return new Intl.NumberFormat("en-US").format(Math.max(0, Math.round(value)))
+  return INT_FORMATTER.format(Math.max(0, Math.round(value)))
 }
 
 function shortModelLabel(label: string): string {
@@ -39,7 +40,6 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
     for (const message of messages()) {
       const role = message?.role ?? message?.info?.role
       if (role !== "assistant") continue
-      if (safeNumber(message?.tokens?.output) <= 0) continue
 
       const messageID = message?.id
       if (typeof messageID === "string" && seen.has(messageID)) continue
