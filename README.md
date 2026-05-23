@@ -7,6 +7,8 @@ Collection of OpenCode sidebar plugins.
 - `@streetturtle/opencode-open-in` - quick buttons to open the current session folder in your IDE.
 - `@streetturtle/opencode-context-progress` - context usage progress bar with tokens, limit, and spend.
 - `@streetturtle/opencode-recap` - session recap summary in the sidebar.
+- `@streetturtle/opencode-session-switcher` - quick sidebar list to jump between sessions.
+- `@streetturtle/opencode-session-tokens` - collapsible session tokens and per-model token breakdown.
 
 ## Publishing
 
