@@ -8,24 +8,23 @@ If this helps your workflow, please star the repo.
   <img src="assets/screenshow.png" alt="opencode-better-sidebar screenshot" width="980" />
 </p>
 
-## Install all plugins (one command)
+## Install
 
 ```sh
-for p in @streetturtle/opencode-open-in @streetturtle/opencode-context-progress @streetturtle/opencode-recap @streetturtle/opencode-session-tokens; do opencode plugin --global "$p"; done
+opencode plugin --global @streetturtle/opencode-open-in
+opencode plugin --global @streetturtle/opencode-context-progress
+opencode plugin --global @streetturtle/opencode-recap
+opencode plugin --global @streetturtle/opencode-session-tokens
 ```
 
-Per-project install (without `--global`):
-
-```sh
-for p in @streetturtle/opencode-open-in @streetturtle/opencode-context-progress @streetturtle/opencode-recap @streetturtle/opencode-session-tokens; do opencode plugin "$p"; done
-```
+or from OpenCode, press <kbd>ctrl</kbd>+<kbd>p</kbd> -> "Install Plugin" -> "@streetturtle/opencode-open-in"
 
 ## Plugin Pack
 
-- `@streetturtle/opencode-open-in` - quick buttons to open the current session folder in Zed, VS Code, or Cursor.
-- `@streetturtle/opencode-context-progress` - context usage progress bar with token usage, window limit, and spend.
-- `@streetturtle/opencode-recap` - one-click AI recap for the current session.
-- `@streetturtle/opencode-session-tokens` - collapsible session token totals with per-model breakdown.
+- [`@streetturtle/opencode-open-in`](./plugins/open-in) - quick buttons to open the current session folder in Zed, VS Code, or Cursor.
+- [`@streetturtle/opencode-context-progress`](./plugins/context-progress)` - context usage progress bar with token usage, window limit, and spend.
+- [`@streetturtle/opencode-recap`](./plugins/recap) - one-click AI recap for the current session.
+- [`@streetturtle/opencode-session-tokens`](./plugins/session-tokens) - collapsible session token totals with per-model breakdown.
 
 ## Publishing
 
