@@ -6,9 +6,14 @@ OpenCode sidebar plugin for quick session token visibility.
 
 ## What it shows
 
-- Collapsed: `▶ Session Tokens <total>`
-- Expanded: `▼ Session Tokens <total>` with per-model totals
+- Collapsed: `▶ Session Tokens <total> (<$cost>)` when cost data is available
+- Expanded: `▼ Session Tokens <total> (<$cost>)` with per-model totals
 - Falls back to session-level token counters when per-message breakdown is unavailable
+
+## Cost logic
+
+- Uses assistant message `cost` values when available
+- Falls back to session-level `cost` when per-message costs are unavailable
 
 ## Counting logic
 
