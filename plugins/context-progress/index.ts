@@ -17,6 +17,20 @@ function safeNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0
 }
 
+function readCost(source: any): number {
+  const candidates = [
+    source?.cost,
+    source?.info?.cost,
+    source?.usage?.cost,
+    source?.metrics?.cost,
+  ]
+  for (const c of candidates) {
+    const n = typeof c === "number" ? c : typeof c === "string" && c !== "" ? Number(c) : NaN
+    if (Number.isFinite(n) && n > 0) return n
+  }
+  return 0
+}
+
 function messageTokenCount(message: any): number {
   const input = safeNumber(message?.tokens?.input)
   const output = safeNumber(message?.tokens?.output)
@@ -39,12 +53,12 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
   const messages = createMemo(() => props.api.state.session.messages(props.sessionID) as any[])
   const sessionCost = createMemo(() => {
     const sessionState = (props.api.state as any)?.session
-    const fromState = safeNumber(sessionState?.get?.(props.sessionID)?.cost)
+    const fromState = readCost(sessionState?.get?.(props.sessionID))
     if (fromState > 0) return fromState
 
     return messages()
       .filter((m) => (m?.role ?? m?.info?.role) === "assistant")
-      .reduce((sum, m) => sum + safeNumber(m?.cost), 0)
+      .reduce((sum, m) => sum + readCost(m), 0)
   })
 
   const usage = createMemo(() => {
