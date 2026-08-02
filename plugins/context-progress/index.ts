@@ -121,7 +121,7 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const main: TuiPlugin = async (api) => {
   const { slots } = api
 
   slots.register({
@@ -134,9 +134,9 @@ const tui: TuiPlugin = async (api) => {
   })
 }
 
-const plugin: TuiPluginModule & { id: string } = {
-  id: "streetturtle.context-progress",
-  tui,
-}
+const tui = (): TuiPluginModule => ({
+  version: 1,
+  main,
+})
 
-export default plugin
+export default { id: "streetturtle.context-progress", tui }

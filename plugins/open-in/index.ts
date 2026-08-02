@@ -180,7 +180,7 @@ function View(props: {
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const main: TuiPlugin = async (api) => {
   const { slots } = api
 
   refreshIDEAvailability()
@@ -195,9 +195,9 @@ const tui: TuiPlugin = async (api) => {
   })
 }
 
-const plugin: TuiPluginModule & { id: string } = {
-  id: "streetturtle.open-in",
-  tui,
-}
+const tui = (): TuiPluginModule => ({
+  version: 1,
+  main,
+})
 
-export default plugin
+export default { id: "streetturtle.open-in", tui }

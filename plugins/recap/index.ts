@@ -109,7 +109,7 @@ function View(props: { api: TuiPluginApi; session_id: string; onRecap: () => voi
   )
 }
 
-const tui: TuiPlugin = async (api, options) => {
+const main: TuiPlugin = async (api, options) => {
   const { slots, client, event } = api
   const recapOptions = options as RecapOptions | undefined
   let configuredRecapModel: ModelChoice | undefined
@@ -283,9 +283,9 @@ ${transcript}`
   })
 }
 
-const plugin: TuiPluginModule & { id: string } = {
-  id: "streetturtle.recap",
-  tui,
-}
+const tui = (): TuiPluginModule => ({
+  version: 1,
+  main,
+})
 
-export default plugin
+export default { id: "streetturtle.recap", tui }
