@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import { createSignal, Show } from "solid-js"
-import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
+import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import { SyntaxStyle, TextAttributes } from "@opentui/core"
 
 const PROMPTS_UNTIL_STALE = 3
@@ -283,9 +283,4 @@ ${transcript}`
   })
 }
 
-const tui = (): TuiPluginModule => ({
-  version: 1,
-  main,
-})
-
-export default { id: "streetturtle.recap", tui }
+export default { id: "streetturtle.recap", tui: main }

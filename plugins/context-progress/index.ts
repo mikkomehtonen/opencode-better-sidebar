@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import { createMemo } from "solid-js"
-import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
+import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import { TextAttributes } from "@opentui/core"
 
 const BAR_WIDTH = 24
@@ -134,9 +134,4 @@ const main: TuiPlugin = async (api) => {
   })
 }
 
-const tui = (): TuiPluginModule => ({
-  version: 1,
-  main,
-})
-
-export default { id: "streetturtle.context-progress", tui }
+export default { id: "streetturtle.context-progress", tui: main }

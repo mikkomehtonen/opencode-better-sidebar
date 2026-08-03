@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import { createSignal, For } from "solid-js"
-import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
+import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import { TextAttributes } from "@opentui/core"
 import { platform } from "node:os"
 import { spawnSync } from "node:child_process"
@@ -195,9 +195,4 @@ const main: TuiPlugin = async (api) => {
   })
 }
 
-const tui = (): TuiPluginModule => ({
-  version: 1,
-  main,
-})
-
-export default { id: "streetturtle.open-in", tui }
+export default { id: "streetturtle.open-in", tui: main }

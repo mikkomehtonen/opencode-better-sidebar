@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import { createMemo, createSignal, For, Show } from "solid-js"
-import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
+import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 
 const MAX_MODEL_ROWS = 10
 const INT_FORMATTER = new Intl.NumberFormat("en-US")
@@ -187,9 +187,4 @@ const main: TuiPlugin = async (api) => {
   })
 }
 
-const tui = (): TuiPluginModule => ({
-  version: 1,
-  main,
-})
-
-export default { id: "streetturtle.session-tokens", tui }
+export default { id: "streetturtle.session-tokens", tui: main }
