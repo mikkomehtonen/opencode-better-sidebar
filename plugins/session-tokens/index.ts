@@ -72,8 +72,12 @@ function formatModelTotals(tokens: number, cost: number, showCost: boolean): str
 }
 
 function shortModelLabel(label: string): string {
-  if (label.length <= 28) return label
-  return `${label.slice(0, 25)}...`
+  const MAX = 28
+  if (label.length <= MAX) return label
+  const lastSlash = label.lastIndexOf("/")
+  const suffix = lastSlash >= 0 ? label.slice(lastSlash + 1) : label
+  if (suffix.length <= MAX - 3) return `...${suffix}`
+  return `...${suffix.slice(suffix.length - (MAX - 3))}`
 }
 
 function View(props: { api: TuiPluginApi; sessionID: string }) {
