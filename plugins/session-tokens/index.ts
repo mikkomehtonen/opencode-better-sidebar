@@ -126,9 +126,13 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
 
     const sessionTokenTotal = spentTokenCount(session()?.tokens)
     const sessionCost = readCost(session())
-    const totalTokens = breakdownTokenTotal > 0 ? breakdownTokenTotal : sessionTokenTotal
-    const totalCost = hasBreakdownCost ? breakdownCostTotal : sessionCost.value
-    const hasCost = hasBreakdownCost || sessionCost.present
+    // The message list exposed by the TUI state is capped to the most recent
+    // 100 messages, so the per-message breakdown shrinks once a session grows
+    // past that window. The session aggregate is cumulative across all
+    // messages, so prefer it whenever it carries any usage.
+    const totalTokens = sessionTokenTotal > 0 ? sessionTokenTotal : breakdownTokenTotal
+    const totalCost = sessionCost.present ? sessionCost.value : breakdownCostTotal
+    const hasCost = sessionCost.present || hasBreakdownCost
     const hasPerModelCost = costTotals.size > 0
 
     return {
