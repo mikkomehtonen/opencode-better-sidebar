@@ -1,5 +1,5 @@
 /** @jsxImportSource @opentui/solid */
-import { createMemo, createSignal, For, Show } from "solid-js"
+import { createEffect, createMemo, createResource, createSignal, For, onCleanup, onMount, Show } from "solid-js"
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 
 const MAX_MODEL_ROWS = 10
@@ -80,13 +80,108 @@ function shortModelLabel(label: string): string {
   return `...${suffix.slice(suffix.length - (MAX - 3))}`
 }
 
+async function fetchSubagentTree(
+  api: TuiPluginApi,
+  sessionID: string,
+  trackedChildren: Set<string>,
+): Promise<any[]> {
+  if (typeof api.client?.session?.children !== "function") return []
+  const collected: any[] = []
+  const seen = new Set<string>()
+  trackedChildren.clear()
+  const walk = async (parentID: string): Promise<void> => {
+    if (seen.has(parentID)) return
+    seen.add(parentID)
+    let kids: any[] = []
+    try {
+      kids = (await api.client.session.children({ sessionID: parentID }))?.data ?? []
+    } catch {
+      kids = []
+    }
+    for (const child of kids) {
+      if (!child || typeof child.id !== "string") continue
+      if (typeof child.agent !== "string" || child.agent === "") continue
+      trackedChildren.add(child.id)
+      collected.push(child)
+      await walk(child.id)
+    }
+  }
+  await walk(sessionID)
+  return collected
+}
+
+function watchChildEvents(
+  api: TuiPluginApi,
+  sessionID: string,
+  trackedChildren: Set<string>,
+  onActivity: () => void,
+): Array<() => void> {
+  const track = (sid: any) => {
+    if (sid === sessionID || (typeof sid === "string" && trackedChildren.has(sid))) onActivity()
+  }
+  return [
+    api.event.on("message.updated", (e) => track((e as any).properties?.sessionID)),
+    api.event.on("message.part.updated", (e) => track((e as any).properties?.sessionID)),
+    api.event.on("session.status", (e) => track((e as any).properties?.sessionID)),
+  ]
+}
+
+function settleRefetch(refetch: () => any, done: () => void) {
+  let promise: any
+  try {
+    promise = refetch()
+  } catch {
+    done()
+    return
+  }
+  if (promise && typeof promise.then === "function") {
+    promise.then(done, done)
+  } else {
+    done()
+  }
+}
+
 function View(props: { api: TuiPluginApi; sessionID: string }) {
   const [open, setOpen] = createSignal(false)
   const theme = () => props.api.theme.current
   const messages = createMemo(() => props.api.state.session.messages(props.sessionID) as any[])
   const session = createMemo(() => props.api.state.session.get(props.sessionID) as any)
 
+  const trackedChildren = new Set<string>()
+  const [subagents, refetchSubagents] = createResource(
+    () => props.sessionID,
+    (sessionID) => fetchSubagentTree(props.api, sessionID, trackedChildren),
+  )
+
+  let fetching = false
+  const scheduleRefetch = () => {
+    if (fetching || subagents.loading) return
+    fetching = true
+    settleRefetch(refetchSubagents, () => {
+      fetching = false
+    })
+  }
+
+  let effectBooted = false
+  createEffect((prev) => {
+    const list = messages()
+    const signature = `${list.length}:${(list[list.length - 1] as any)?.id ?? ""}`
+    const changed = effectBooted && prev !== signature
+    effectBooted = true
+    if (changed) scheduleRefetch()
+    return signature
+  }, "")
+
+  let unsubscribers: Array<() => void> = []
+  onMount(() => {
+    unsubscribers = watchChildEvents(props.api, props.sessionID, trackedChildren, scheduleRefetch)
+  })
+  onCleanup(() => {
+    for (const unsubscribe of unsubscribers) unsubscribe()
+  })
+
   const data = createMemo(() => {
+    const children = subagents() ?? []
     const tokenTotals = new Map<string, number>()
     const costTotals = new Map<string, number>()
     let breakdownTokenTotal = 0
@@ -130,26 +225,61 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
 
     const sessionTokenTotal = spentTokenCount(session()?.tokens)
     const sessionCost = readCost(session())
-    // The message list exposed by the TUI state is capped to the most recent
-    // 100 messages, so the per-message breakdown shrinks once a session grows
-    // past that window. The session aggregate is cumulative across all
-    // messages, so prefer it whenever it carries any usage.
-    const totalTokens = sessionTokenTotal > 0 ? sessionTokenTotal : breakdownTokenTotal
-    const totalCost = sessionCost.present ? sessionCost.value : breakdownCostTotal
-    const hasCost = sessionCost.present || hasBreakdownCost
+    const mainTokens = sessionTokenTotal > 0 ? sessionTokenTotal : breakdownTokenTotal
+    const mainCost = sessionCost.present ? sessionCost.value : breakdownCostTotal
+
+    const subagentTokenTotals = new Map<string, number>()
+    const subagentCostTotals = new Map<string, number>()
+    let subagentTokens = 0
+    let subagentCost = 0
+    let hasSubagentCost = false
+
+    for (const child of children) {
+      const childTokens = spentTokenCount(child?.tokens)
+      const childCost = readCost(child)
+      if (childTokens <= 0 && !childCost.present) continue
+      const agent = typeof child?.agent === "string" && child.agent ? child.agent : "subagent"
+      if (childTokens > 0) {
+        subagentTokens += childTokens
+        subagentTokenTotals.set(agent, (subagentTokenTotals.get(agent) ?? 0) + childTokens)
+      }
+      if (childCost.present) {
+        hasSubagentCost = true
+        subagentCost += childCost.value
+        subagentCostTotals.set(agent, (subagentCostTotals.get(agent) ?? 0) + childCost.value)
+      }
+    }
+
+    const subagentByAgent = [...new Set([...subagentTokenTotals.keys(), ...subagentCostTotals.keys()])]
+      .map((agent) => ({
+        agent,
+        tokens: subagentTokenTotals.get(agent) ?? 0,
+        cost: subagentCostTotals.get(agent) ?? 0,
+      }))
+      .sort((a, b) => b.tokens - a.tokens || b.cost - a.cost)
+
+    const hasSubagents = subagentTokens > 0 || hasSubagentCost
+    const hasCost = sessionCost.present || hasBreakdownCost || hasSubagentCost
     const hasPerModelCost = costTotals.size > 0
 
     return {
-      totalTokens,
-      totalCost,
+      totalTokens: mainTokens + subagentTokens,
+      totalCost: mainCost + subagentCost,
+      mainTokens,
+      mainCost,
       hasCost,
       hasPerModelCost,
       perModel,
+      hasSubagents,
+      subagentTokens,
+      subagentCost,
+      hasSubagentCost,
+      subagentByAgent,
     }
   })
 
   const show = createMemo(() => data().totalTokens > 0 || data().hasCost)
-  const canExpand = createMemo(() => data().perModel.length > 0)
+  const canExpand = createMemo(() => data().perModel.length > 0 || data().hasSubagents)
 
   return (
     <Show when={show()}>
@@ -165,9 +295,19 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
           <Show when={data().hasCost}>
             <text fg={theme().textMuted}> ({formatMoney(data().totalCost)})</text>
           </Show>
+          <Show when={data().hasSubagents}>
+            <text fg={theme().textMuted}>· incl. subagents</text>
+          </Show>
         </box>
 
         <Show when={canExpand() && open()}>
+          <Show when={data().hasSubagents && data().perModel.length > 0}>
+            <box flexDirection="row">
+              <text fg={theme().textMuted}>Main</text>
+              <box flexGrow={1} />
+              <text fg={theme().textMuted}>{formatModelTotals(data().mainTokens, data().mainCost, data().hasCost)}</text>
+            </box>
+          </Show>
           <For each={data().perModel.slice(0, MAX_MODEL_ROWS)}>{(row) => (
             <box flexDirection="row">
               <text fg={theme().textMuted}>{shortModelLabel(row.model)}</text>
@@ -177,6 +317,26 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
           )}</For>
           <Show when={data().perModel.length > MAX_MODEL_ROWS}>
             <text fg={theme().textMuted}>+{data().perModel.length - MAX_MODEL_ROWS} more</text>
+          </Show>
+
+          <Show when={data().hasSubagents}>
+            <box flexDirection="row">
+              <text fg={theme().text}>
+                <b>Subagents</b>
+              </text>
+              <box flexGrow={1} />
+              <text fg={theme().textMuted}>{formatModelTotals(data().subagentTokens, data().subagentCost, data().hasSubagentCost)}</text>
+            </box>
+            <For each={data().subagentByAgent.slice(0, MAX_MODEL_ROWS)}>{(row) => (
+              <box flexDirection="row">
+                <text fg={theme().textMuted}>@ {row.agent}</text>
+                <box flexGrow={1} />
+                <text fg={theme().textMuted}>{formatModelTotals(row.tokens, row.cost, data().hasSubagentCost)}</text>
+              </box>
+            )}</For>
+            <Show when={data().subagentByAgent.length > MAX_MODEL_ROWS}>
+              <text fg={theme().textMuted}>+{data().subagentByAgent.length - MAX_MODEL_ROWS} more</text>
+            </Show>
           </Show>
         </Show>
       </box>
