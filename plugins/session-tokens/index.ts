@@ -117,7 +117,7 @@ function watchChildEvents(
   onActivity: () => void,
 ): Array<() => void> {
   const track = (sid: any) => {
-    if (sid === sessionID || (typeof sid === "string" && trackedChildren.has(sid))) onActivity()
+    if (typeof sid === "string") onActivity()
   }
   return [
     api.event.on("message.updated", (e) => track((e as any).properties?.sessionID)),
