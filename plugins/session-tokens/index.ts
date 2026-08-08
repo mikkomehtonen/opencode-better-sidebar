@@ -284,20 +284,14 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
   return (
     <Show when={show()}>
       <box>
-        <box flexDirection="row" gap={1} onMouseDown={() => canExpand() && setOpen((x) => !x)}>
-          <Show when={canExpand()}>
-            <text fg={theme().text}>{open() ? "▼" : "▶"}</text>
-          </Show>
+        <box onMouseDown={() => canExpand() && setOpen((x) => !x)}>
           <text fg={theme().text}>
+            {canExpand() ? (open() ? "▼" : "▶") + " " : ""}
             <b>Session Tokens</b>
+            <span fg={theme().textMuted}>{` ${formatInt(data().totalTokens)}`}</span>
+            {data().hasCost ? <span fg={theme().textMuted}> ({formatMoney(data().totalCost)})</span> : ""}
+            {data().hasSubagents ? <span fg={theme().textMuted}> · incl. subagents</span> : ""}
           </text>
-          <text fg={theme().textMuted}>{formatInt(data().totalTokens)}</text>
-          <Show when={data().hasCost}>
-            <text fg={theme().textMuted}> ({formatMoney(data().totalCost)})</text>
-          </Show>
-          <Show when={data().hasSubagents}>
-            <text fg={theme().textMuted}>· incl. subagents</text>
-          </Show>
         </box>
 
         <Show when={canExpand() && open()}>
