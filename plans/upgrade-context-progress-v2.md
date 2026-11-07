@@ -323,6 +323,9 @@ g. **Reactivity**: the solid data store is event-driven (`createData` in `@openc
    subscribes to `OpenCodeEvent`s), so memos reading `message.list` / `cost` refresh
    automatically — no manual `listen`+`invalidate` was required. Relevant event names for
    future plugins: `session.usage.updated`, `session.step.ended`, `session.idle`.
+   **CORRECTION (recap port, 2026-11-07)**: `session.idle` (and `session.status`) are only in
+   the type union — the 2.2.6 server never emits them. Use `session.execution.started` /
+   `session.execution.succeeded` instead (see `plans/upgrade-recap-v2.md` fact s).
 h. **Package facts**: `@opencode/plugin` latest is **2.2.6**; its OpenTUI peers require
    **`>=0.8.1`** (docs said `>=0.6.6` — outdated). Optional peers (vite/electron/@opencode/theme)
    are NOT auto-installed; `@opencode/theme` only needs to exist locally for `tsc` of
