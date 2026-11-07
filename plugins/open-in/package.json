@@ -1,6 +1,6 @@
 {
   "name": "@streetturtle/opencode-open-in",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "OpenCode TUI sidebar plugin to open session folders in IDEs",
   "repository": {
     "type": "git",
@@ -32,12 +32,14 @@
   ],
   "license": "MIT",
   "engines": {
-    "opencode": ">=1.4.3"
+    "opencode": ">=2.0.0"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "^1.4.3",
-    "@opentui/core": "^0.2.2",
-    "@opentui/solid": "^0.2.2",
-    "solid-js": "^1.9.12"
+    "@opencode/plugin": "^2.2.6"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.8.1",
+    "@opentui/solid": ">=0.8.1",
+    "solid-js": ">=1.9.0"
   }
 }
