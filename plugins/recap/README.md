@@ -10,15 +10,14 @@ One-click Markdown session recap in the OpenCode sidebar.
 
 ## Install
 
-```sh
-opencode plugin @streetturtle/opencode-recap
-```
-
-Global install:
+Requires OpenCode 2 (for OpenCode 1 install version `@1`).
 
 ```sh
-opencode plugin --global @streetturtle/opencode-recap
+opencode plugin add @streetturtle/opencode-recap
 ```
+
+This installs the plugin and adds it to your global configuration
+(`~/.config/opencode/cli.json`).
 
 ## Usage
 
@@ -35,21 +34,24 @@ What the plugin does internally:
 
 By default, recap uses the session's most recent assistant model.
 
-You can override it by setting both `providerID` and `modelID` in `tui.json`:
+You can override it by setting both `providerID` and `modelID` in the plugin options
+(`~/.config/opencode/cli.json`):
 
 ```json
 {
-  "plugin": [
-    ["@streetturtle/opencode-recap", {
-      "providerID": "github-copilot",
-      "modelID": "gemini-3-flash-preview"
-    }]
+  "plugins": [
+    {
+      "package": "@streetturtle/opencode-recap",
+      "options": {
+        "providerID": "github-copilot",
+        "modelID": "gemini-3-flash-preview"
+      }
+    }
   ]
 }
 ```
 
 ## Troubleshooting
 
-- `ProviderModelNotFoundError`: verify values with `opencode models`
+- Recap shows an error: verify `providerID` / `modelID` with `opencode models`
 - `Invalid recap plugin config`: set both fields or neither
-- `duplicate tui plugin id`: configure recap only once
