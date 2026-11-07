@@ -21,12 +21,23 @@ Compact context usage widget for the OpenCode sidebar.
 
 ## Install
 
-```sh
-opencode plugin @streetturtle/opencode-context-progress
-```
-
-Global install:
+Requires OpenCode 2 (for OpenCode 1 install version `@1`).
 
 ```sh
-opencode plugin --global @streetturtle/opencode-context-progress
+opencode plugin add @streetturtle/opencode-context-progress
 ```
+
+This installs the plugin and adds it to your global configuration
+(`~/.config/opencode/cli.json`).
+
+## Replace the built-in context section
+
+OpenCode 2 shows its own context section in the sidebar. To hide it and keep only this
+widget, add a disable directive **before** the plugin entry in `~/.config/opencode/cli.json`:
+
+```json
+{
+  "plugins": ["-opencode.sidebar.context", "@streetturtle/opencode-context-progress"]
+}
+```
+

@@ -1,7 +1,24 @@
 /** @jsxImportSource @opentui/solid */
-import { createMemo } from "solid-js"
-import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
+import { createEffect, createMemo } from "solid-js"
+import { Plugin, usePlugin } from "@opencode/plugin/tui"
 import { TextAttributes } from "@opentui/core"
+
+// V2 API facts verified against @opencode/plugin@2.2.6 shipped .d.ts (2026-11-07):
+// - Plugin.define({ id, setup(ctx) }) from "@opencode/plugin/tui"; usePlugin() returns
+//   the same Context inside slot JSX. setup may return a cleanup fn.
+// - ui.slot({ append: "sidebar.content", render: ({ sessionID }) => ... }) returns an
+//   unregister fn. Slot input is { sessionID: string } (SlotMap["sidebar.content"]).
+// - data.session.message.list(id): SessionMessageInfo[]; sync(id): Promise<void>.
+//   The solid data store is event-driven and self-refreshes, so memos update without
+//   manual data.listen()/invalidate().
+// - data.session.cost(id): number (plain USD number, MoneyUSD = number).
+// - Assistant message shape: { type: "assistant", model: { id, providerID },
+//   tokens?: { input, output, reasoning, cache: { read, write } }, cost?: number }.
+// - data.location.model.list(location): ModelInfo[] | undefined with entries
+//   { providerID, modelID, limit: { context, output } }.
+// - context.theme: ResolvedTheme (@opencode/theme/tui) — tokens are RGBA values
+//   (pass straight to `fg`): text.base, text.muted, hue.accent[100..900],
+//   text.feedback.{error,warning,success,info}.base.
 
 const BAR_WIDTH = 24
 
@@ -49,23 +66,37 @@ function buildBar(percent: number): { bar: string; clamped: number } {
   }
 }
 
-function View(props: { api: TuiPluginApi; sessionID: string }) {
-  const messages = createMemo(() => props.api.state.session.messages(props.sessionID) as any[])
+function View(props: { sessionID: string }) {
+  const context = usePlugin()
+
+  // Prime the message and model catalogs on mount / session switch.
+  createEffect(() => {
+    void context.data.session.message.sync(props.sessionID)
+    const location = context.location ?? context.data.location.default()
+    void context.data.location.model.sync(location)
+  })
+
+  const messages = createMemo(
+    () => (context.data.session.message.list(props.sessionID) ?? []) as any[],
+  )
+
   const sessionCost = createMemo(() => {
-    const sessionState = (props.api.state as any)?.session
-    const fromState = readCost(sessionState?.get?.(props.sessionID))
-    if (fromState > 0) return fromState
+    const direct = safeNumber(context.data.session.cost(props.sessionID))
+    if (direct > 0) return direct
+
+    const fromSession = readCost(context.data.session.get(props.sessionID))
+    if (fromSession > 0) return fromSession
 
     return messages()
-      .filter((m) => (m?.role ?? m?.info?.role) === "assistant")
+      .filter((m) => (m?.type ?? m?.role ?? m?.info?.role) === "assistant")
       .reduce((sum, m) => sum + readCost(m), 0)
   })
 
   const usage = createMemo(() => {
     const lastAssistant = messages().findLast((m) => {
-      const role = m?.role ?? m?.info?.role
+      const kind = m?.type ?? m?.role ?? m?.info?.role
       const output = safeNumber(m?.tokens?.output)
-      return role === "assistant" && output > 0
+      return kind === "assistant" && output > 0
     })
 
     if (!lastAssistant) {
@@ -77,9 +108,15 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
     }
 
     const tokens = messageTokenCount(lastAssistant)
-    const providerID = lastAssistant?.providerID ?? lastAssistant?.info?.providerID
-    const modelID = lastAssistant?.modelID ?? lastAssistant?.info?.modelID
-    const model = props.api.state.provider.find((item) => item.id === providerID)?.models?.[modelID]
+    const providerID =
+      lastAssistant?.model?.providerID ?? lastAssistant?.providerID ?? lastAssistant?.info?.providerID
+    const modelID = lastAssistant?.model?.id ?? lastAssistant?.modelID ?? lastAssistant?.info?.modelID
+
+    const location = context.location ?? context.data.location.default()
+    const models = context.data.location.model.list(location) ?? []
+    const model = models.find(
+      (item) => item.providerID === providerID && item.modelID === modelID,
+    )
     const contextWindow = safeNumber(model?.limit?.context)
     const percent = contextWindow > 0 ? Math.round((tokens / contextWindow) * 100) : 0
 
@@ -96,12 +133,22 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
     return `${formatInt(state.tokens)} / ${limitText} / ${formatMoney(sessionCost())}`
   })
 
-  const theme = () => props.api.theme.current
+  const theme = createMemo(() => {
+    const current = context.theme
+    return {
+      text: current.text.base,
+      muted: current.text.muted,
+      accent: current.hue.accent[500] ?? current.text.base,
+      warning: current.text.feedback.warning.base,
+      error: current.text.feedback.error.base,
+    }
+  })
 
   const progress = createMemo(() => {
     const percent = usage().percent
     const bar = buildBar(percent)
-    const color = percent >= 90 ? theme().error : percent >= 70 ? theme().warning : theme().accent
+    const colors = theme()
+    const color = percent >= 90 ? colors.error : percent >= 70 ? colors.warning : colors.accent
     return {
       bar: bar.bar,
       color,
@@ -116,22 +163,19 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
         <text fg={progress().color}>{progress().bar}</text>
         <text fg={progress().color}> {progress().percent}%</text>
       </box>
-      <text fg={theme().textMuted}>{detailLine()}</text>
+      <text fg={theme().muted}>{detailLine()}</text>
     </box>
   )
 }
 
-const main: TuiPlugin = async (api) => {
-  const { slots } = api
+export default Plugin.define({
+  id: "streetturtle.context-progress",
+  setup(context) {
+    const stopSlot = context.ui.slot({
+      append: "sidebar.content",
+      render: (input) => <View sessionID={input.sessionID} />,
+    })
 
-  slots.register({
-    order: 100,
-    slots: {
-      sidebar_content(_ctx, props) {
-        return <View api={api} sessionID={props.session_id} />
-      },
-    },
-  })
-}
-
-export default { id: "streetturtle.context-progress", tui: main }
+    return () => stopSlot()
+  },
+})
