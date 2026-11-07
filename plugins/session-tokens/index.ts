@@ -5,6 +5,8 @@ import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 const MAX_MODEL_ROWS = 10
 const INT_FORMATTER = new Intl.NumberFormat("en-US")
 
+const expansionStateBySession = new Map<string, boolean>()
+
 function safeNumber(value: unknown): number {
   if (typeof value === "number" && Number.isFinite(value)) return value
   if (typeof value === "string") {
@@ -142,7 +144,7 @@ function settleRefetch(refetch: () => any, done: () => void) {
 }
 
 function View(props: { api: TuiPluginApi; sessionID: string }) {
-  const [open, setOpen] = createSignal(false)
+  const [open, setOpen] = createSignal(expansionStateBySession.get(props.sessionID) ?? false)
   const theme = () => props.api.theme.current
   const messages = createMemo(() => props.api.state.session.messages(props.sessionID) as any[])
   const session = createMemo(() => props.api.state.session.get(props.sessionID) as any)
@@ -284,7 +286,14 @@ function View(props: { api: TuiPluginApi; sessionID: string }) {
   return (
     <Show when={show()}>
       <box>
-        <box onMouseDown={() => canExpand() && setOpen((x) => !x)}>
+        <box
+          onMouseDown={() => {
+            if (!canExpand()) return
+            const next = !open()
+            expansionStateBySession.set(props.sessionID, next)
+            setOpen(next)
+          }}
+        >
           <text fg={theme().text}>
             {canExpand() ? (open() ? "▼" : "▶") + " " : ""}
             <b>Session Tokens</b>
