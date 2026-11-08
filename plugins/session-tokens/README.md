@@ -10,7 +10,8 @@ OpenCode sidebar plugin for quick session token visibility.
 - Collapsed: `▶ Session Tokens <total> (<$cost>)` when cost data is available
 - Your collapse/expand choice is remembered per session
 - When subagents were used, the total includes their usage and a `Subagents` section splits out per-subagent-agent totals
-- Falls back to session-level token counters when per-message breakdown is unavailable
+- `Main` uses the session-level token/cost counters reported by OpenCode, or the per-message sum when that is larger
+- An `(other)` row appears when the session aggregate exceeds the sum of the per-model rows: it reconciles session-level usage that has no transcript message (e.g. automatic title generation after the first prompt), so the visible rows always sum to `Main`
 
 ## Install
 
@@ -43,3 +44,4 @@ This installs the plugin and adds it to your global configuration
 - Counts assistant messages with token data
 - De-duplicates repeated assistant messages by message ID
 - Subagent spend uses each child session's cumulative `tokens` (input + output + reasoning + cache.write)
+- `(other)` = session aggregate − per-message breakdown (tokens and cost); it appears only when the difference is non-zero and disappears when the rows already sum to `Main`

@@ -256,21 +256,33 @@ function View(props: { sessionID: string }) {
       }
     }
 
+    // Record-level (own) aggregates — data.session.cost() would fold the family in and
+    // double-count the subagent rows summed below.
+    const session = context.data.session.get(props.sessionID)
+    const sessionTokenTotal = spentTokenCount(session?.tokens)
+    const sessionCost = readCost(session)
+    // The server-side session aggregate includes usage that never lands on a transcript
+    // assistant message (e.g. title generation right after the first prompt), so it can
+    // exceed the per-message breakdown. Anchor Main on the larger of the two and expose
+    // the difference as an "(other)" row so the visible rows always sum to Main.
+    const mainTokens = Math.max(sessionTokenTotal, breakdownTokenTotal)
+    const mainCost = sessionCost.present
+      ? Math.max(sessionCost.value, breakdownCostTotal)
+      : breakdownCostTotal
+
     const perModel = [...new Set([...tokenTotals.keys(), ...costTotals.keys()])]
       .map((model) => ({
         model,
         tokens: tokenTotals.get(model) ?? 0,
         cost: costTotals.get(model) ?? 0,
       }))
-      .sort((a, b) => b.tokens - a.tokens || b.cost - a.cost)
 
-    // Record-level (own) aggregates — data.session.cost() would fold the family in and
-    // double-count the subagent rows summed below.
-    const session = context.data.session.get(props.sessionID)
-    const sessionTokenTotal = spentTokenCount(session?.tokens)
-    const sessionCost = readCost(session)
-    const mainTokens = sessionTokenTotal > 0 ? sessionTokenTotal : breakdownTokenTotal
-    const mainCost = sessionCost.present ? sessionCost.value : breakdownCostTotal
+    const otherTokens = mainTokens - breakdownTokenTotal
+    const otherCost = mainCost - breakdownCostTotal
+    if (otherTokens > 0 || otherCost > 0) {
+      perModel.push({ model: "(other)", tokens: otherTokens, cost: otherCost })
+    }
+    perModel.sort((a, b) => b.tokens - a.tokens || b.cost - a.cost)
 
     const subagentTokenTotals = new Map<string, number>()
     const subagentCostTotals = new Map<string, number>()
@@ -304,7 +316,7 @@ function View(props: { sessionID: string }) {
 
     const hasSubagents = subagentTokens > 0 || hasSubagentCost
     const hasCost = sessionCost.present || hasBreakdownCost || hasSubagentCost
-    const hasPerModelCost = costTotals.size > 0
+    const hasPerModelCost = costTotals.size > 0 || otherCost > 0
 
     return {
       totalTokens: mainTokens + subagentTokens,
