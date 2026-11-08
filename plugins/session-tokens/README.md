@@ -11,13 +11,24 @@ OpenCode sidebar plugin for quick session token visibility.
 - When subagents were used, the total includes their usage and a `Subagents` section splits out per-subagent-agent totals
 - Falls back to session-level token counters when per-message breakdown is unavailable
 
+## Install
+
+Requires OpenCode 2 (for OpenCode 1 install version `@1`).
+
+```sh
+opencode plugin add @streetturtle/opencode-session-tokens
+```
+
+This installs the plugin and adds it to your global configuration
+(`~/.config/opencode/cli.json`).
+
 ## Subagent usage
 
 - Subagent turns run in separate child sessions, so their spend is not part of the parent session's aggregate counters
-- The plugin fetches the child session tree via `session.children` and adds every descendant's cumulative `tokens`/`cost`
+- The plugin discovers descendant sessions by parent id and adds every subagent's cumulative `tokens`/`cost`
 - Only descendants launched as subagents count (children with an `agent`), so forked sessions are excluded
 - The child tree recurses through nested subagents, matching your `subagent_depth` setting
-- Data refreshes as subagent activity is streamed back (message/status events); on older OpenCode versions without the `children` endpoint this feature degrades silently to main-agent-only totals
+- Totals update live while subagents run, and historical subagent usage is restored when you reopen a session
 
 ## Cost logic
 
@@ -31,15 +42,3 @@ OpenCode sidebar plugin for quick session token visibility.
 - Counts assistant messages with token data
 - De-duplicates repeated assistant messages by message ID
 - Subagent spend uses each child session's cumulative `tokens` (input + output + reasoning + cache.write)
-
-## Install
-
-```sh
-opencode plugin @streetturtle/opencode-session-tokens
-```
-
-Global install:
-
-```sh
-opencode plugin --global @streetturtle/opencode-session-tokens
-```
