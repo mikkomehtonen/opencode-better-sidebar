@@ -156,7 +156,8 @@ async function seedSubagentSessions(context: ReturnType<typeof usePlugin>, sessi
 
 function View(props: { sessionID: string }) {
   const context = usePlugin()
-  const [open, setOpen] = createSignal(expansionStateBySession.get(props.sessionID) ?? false)
+  // Expanded by default; the Map remembers an explicit collapse (or re-expand) per session.
+  const [open, setOpen] = createSignal(expansionStateBySession.get(props.sessionID) ?? true)
   const theme = createMemo(() => {
     const current = context.theme
     return {

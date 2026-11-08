@@ -6,8 +6,9 @@ OpenCode sidebar plugin for quick session token visibility.
 
 ## What it shows
 
+- Expanded by default: `▼ Session Tokens <total> (<$cost>)` with per-model totals for the main agent; click the header to collapse
 - Collapsed: `▶ Session Tokens <total> (<$cost>)` when cost data is available
-- Expanded: `▼ Session Tokens <total> (<$cost>)` with per-model totals for the main agent
+- Your collapse/expand choice is remembered per session
 - When subagents were used, the total includes their usage and a `Subagents` section splits out per-subagent-agent totals
 - Falls back to session-level token counters when per-message breakdown is unavailable
 
