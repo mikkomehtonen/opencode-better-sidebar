@@ -353,7 +353,6 @@ function View(props: { sessionID: string }) {
             <b>Session Tokens</b>
             <span style={{ fg: theme().muted }}>{` ${formatInt(data().totalTokens)}`}</span>
             {data().hasCost ? <span style={{ fg: theme().muted }}> ({formatMoney(data().totalCost)})</span> : ""}
-            {data().hasSubagents ? <span style={{ fg: theme().muted }}> · incl. subagents</span> : ""}
           </text>
         </box>
 
